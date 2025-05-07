@@ -18,23 +18,100 @@ class GameSprite(pygame.sprite.Sprite):
     def reset(self):
         main_window.blit(self.image, (self.rect.x, self.rect.y))
 
-class Rozumnik(pygame.sprite.Sprite):
-    def __init__(self, player_image, player_x, player_y, size_x, size_y, player_x_speed,player_y_speed, player_ghost_image):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.transform.scale(pygame.image.load(player_image), (size_x, size_y))
-        self.cropped = self.image.subsurface(pygame.Rect(0, 0, 24, self.image.get_height()))
-        self.rect = self.cropped.get_rect()
+
+class Player(pygame.sprite.Sprite):
+    def __init__(self, player_image, player_x, player_y, size_x, size_y, player_x_speed,player_y_speed, bullet_image):
+        self.player_image = player_image
+        self.image = pygame.transform.scale(pygame.image.load(self.player_image), (size_x, size_y))
+        self.rect = self.image.get_rect()
         self.rect.x = player_x
         self.rect.y = player_y
         self.x_speed = player_x_speed
         self.y_speed = player_y_speed
-        self.player_ghost_image = player_ghost_image
+        self.bullet = bullet_image
+        self.bullet_image = bullet_image
+        self.direction = "right"
+        self.animation_frames = []
+        self.frame_index = 0
+        self.load_animation()
+        pygame.sprite.Sprite.__init__(self)
 
+    def fire(self):
+        bullet = Bullet('images/bullet.png', self.rect.centerx, self.rect.top, 64, 64, 20)
+        bullets.add(bullet)
     def reset(self):
-        main_window.blit(self.cropped, (self.rect.x, self.rect.y))
+        main_window.blit(self.image, (self.rect.x, self.rect.y))
 
+    def load_animation(self):
+        sheet_right = pygame.image.load(self.player_image).convert_alpha()
+        frame_width = 24
+        frame_height = 24
+        self.frames_right = [
+            pygame.transform.scale(sheet_right.subsurface((i * frame_width, 0, frame_width, frame_height)), (64, 64))
+            for i in range(4)
+        ]
+        self.frames_left = [pygame.transform.flip(f, True, False) for f in self.frames_right]
+        self.animation_frames = self.frames_right
+    
+    def update_animation(self):
+        if self.direction == "right":
+            self.animation_frames = self.frames_right
+        elif self.direction == "left":
+            self.animation_frames = self.frames_left
+        self.frame_index += 0.25
+        if self.frame_index >= len(self.animation_frames):
+            self.frame_index = 0
+        self.image = self.animation_frames[int(self.frame_index)]
+    
 
+class Rozumnik(Player):
+    def __init__(self, player_image, player_x, player_y, size_x, size_y, player_x_speed,player_y_speed, bullet_image):
+        super().__init__(player_image, player_x, player_y, size_x, size_y, player_x_speed, player_y_speed, bullet_image)
 
+class Bullet(GameSprite):
+    def __init__(self, player_image, player_x, player_y, size_x, size_y, player_speed):
+        GameSprite.__init__(self, player_image, player_x, player_y, size_x, size_y)
+        self.speed = player_speed
+        self.bullet = pygame.transform.scale(pygame.image.load("images/bullets.png"), (320, 64))
+        self.direction = "right"
+        self.animation_frames = []
+        self.frame_index = 0
+        self.load_animation()
+
+    def load_animation(self):
+        sheet_right = pygame.image.load("images/bullets.png").convert_alpha()
+        frame_width = 64
+        frame_height = 64
+        self.frames_right = [
+            pygame.transform.scale(sheet_right.subsurface((i * frame_width, 0, frame_width, frame_height)), (64, 64))
+            for i in range(5)
+        ]
+        self.frames_left = [pygame.transform.flip(f, True, False) for f in self.frames_right]
+        self.animation_frames = self.frames_right
+    
+    def update_animation(self):
+        if self.direction == "right":
+            self.animation_frames = self.frames_right
+        elif self.direction == "left":
+            self.animation_frames = self.frames_left
+        self.frame_index += 0.1
+        if self.frame_index >= len(self.animation_frames):
+            self.frame_index = 0
+        self.image = self.animation_frames[int(self.frame_index)]
+
+    def update(self):
+        if game_level == 1:
+            if rozumnik.direction == "right":
+                self.direction = "right"
+                self.rect.x += self.speed
+                if self.rect.x > window_width+10:
+                    self.kill()
+            elif rozumnik.direction == "left":
+                self.direction = "left"
+                self.rect.x -= self.speed
+                if self.rect.x < -10:
+                    self.kill()
+        self.update_animation()
 back = (224, 224, 224)
 menu_rect_color = (255, 25, 255)
 
@@ -53,7 +130,7 @@ music_state = True
 def fade(screen, width, height):
     fade_surface = pygame.Surface((width, height))
     fade_surface.fill((0, 0, 0))
-    for alpha in range(0, 255, 5):
+    for alpha in range(0, 255, 10):
         fade_surface.set_alpha(alpha)
         screen.blit(fade_surface, (0, 0))
         pygame.display.update()
@@ -103,6 +180,7 @@ coin3 = GameSprite('images/icons/hint.png', 585, 310, 64, 64)
 coin4 = GameSprite('images/icons/hint.png', 840, 100, 64, 64)
 coin5 = GameSprite('images/icons/hint.png', 1000, 410, 64, 64)
 coins = pygame.sprite.Group()
+bullets = pygame.sprite.Group()
 coins.add(coin1)
 coins.add(coin2)
 coins.add(coin3)
@@ -114,7 +192,8 @@ fall = False
 key_rect = False
 key = pygame.transform.scale(pygame.image.load("images/icons/key.png"), (64, 64))
 platform = pygame.transform.scale(pygame.image.load("images/platforms_lvl1.png"),(1280,720))
-rozumnik = Rozumnik("images/gnomi/rozumnik.png", x, y, 96, 24, 5, 5, "images/gnomi/rozumnik_ghost.png")
+rozumnik = Rozumnik("images/gnomi/rozumnik.png", x, y, 64, 64, 5, 5, "images/gnomi/rozumnik_ghost.png")
+rozumnik.load_animation()
 bg = pygame.transform.scale(pygame.image.load("images/bg.png"), (window_width, window_height))
 
 i = 0
@@ -151,24 +230,15 @@ while game:
                 game = False
             if e.type == pygame.MOUSEBUTTONDOWN:
                 if quit_rect.collidepoint(pygame.mouse.get_pos()):
-                    print("Quit rect")
                     menurunning = False
                     pygame.quit()
                     exit()
                 elif start_rect.collidepoint(pygame.mouse.get_pos()):
-                    print("Start rect")
                     fade(main_window, window_width, window_height)
                     game_controls = True
                     menurunning = False
                     pygame.mixer.music.stop()
-                    # menurunning = False
-                    # main_window.blit(bg, (0,0))
-                    # pygame.mixer.music.load("sounds/lvl1.wav")
-                    # if music_state:
-                    #     pygame.mixer.music.set_volume(0.5)
-                    #     pygame.mixer.music.play(-1)
                 elif sound_rect.collidepoint(pygame.mouse.get_pos()):
-                    print("Sound Ico")
                     if music_state:
                         music_state = False
                         pygame.mixer.music.pause()
@@ -191,7 +261,6 @@ while game:
                     game = False
                 if e.type == pygame.MOUSEBUTTONDOWN:
                     if close_game_controls.collidepoint(pygame.mouse.get_pos()):
-                        print("Close controls")
                         fade(main_window, window_width, window_height)
                         game_controls = False
                         menurunning = False
@@ -202,7 +271,6 @@ while game:
                             pygame.mixer.music.set_volume(0.5)
                             pygame.mixer.music.play(-1)
             if i/60 == 5:
-                print("Close controls")
                 fade(main_window, window_width, window_height)
                 game_controls = False
                 menurunning = False
@@ -227,11 +295,13 @@ while game:
             platform7 = pygame.draw.rect(main_window,(0,0,0), (770,160,200,50),5)
             platform8 = pygame.draw.rect(main_window,(0,0,0), (1020,270,200,50),5)
             platform9 = pygame.draw.rect(main_window,(0,0,0), (930,475,200,50),5)
-            rozumnik = Rozumnik("images/gnomi/rozumnik.png", x, y, 96, 24, 5, 5, "images/gnomi/rozumnik_ghost.png")
             main_window.blit(bg, (0,0))
             main_window.blit(platform, (0,0))
+            rozumnik.update_animation()
             rozumnik.reset()
             coins.draw(main_window)
+            bullets.draw(main_window)
+            bullets.update()
             if coin1.alive() and coin1.rect.colliderect(rozumnik.rect):
                 coin1.kill()
                 coin_counter += 1
@@ -256,25 +326,22 @@ while game:
                 
             for e in pygame.event.get():
                 if e.type == pygame.QUIT:
-                    # pygame.quit()
-                    # exit()
-                    print("Quit")
                     game = False
                 if e.type == pygame.KEYDOWN:
                     if e.key == pygame.K_w:
-                        print("W")
                         if jumpreload == 1:
                             yspeed -= rozumnik.y_speed
                             jumpreload = 0
-                    if e.key == pygame.K_a:    
-                        print("A")
+                    if e.key == pygame.K_a:  
+                        rozumnik.direction = "left"
                         xspeed -= rozumnik.x_speed
-                    if e.key == pygame.K_s:   
-                        print("S")
+                    if e.key == pygame.K_s:
                         yspeed += rozumnik.y_speed
-                    if e.key == pygame.K_d:   
-                        print("D")
+                    if e.key == pygame.K_d:
+                        rozumnik.direction = "right"
                         xspeed += rozumnik.x_speed
+                    if e.key == pygame.K_SPACE:
+                        rozumnik.fire()
                 if e.type == pygame.KEYUP:
                     if e.key == pygame.K_w or e.key == pygame.K_s:
                         yspeed = 0
@@ -291,15 +358,18 @@ while game:
                 fall = False
             else:
                 if fall == True:
-                    y += rozumnik.y_speed
-            x += xspeed
-            y += yspeed
+                    rozumnik.rect.y += rozumnik.y_speed
+            rozumnik.rect.x += xspeed
+            rozumnik.rect.y += yspeed
             if rozumnik.rect.colliderect(block_rect) or rozumnik.rect.colliderect(platform1) or rozumnik.rect.colliderect(platform2) or rozumnik.rect.colliderect(platform3) or rozumnik.rect.colliderect(platform4) or rozumnik.rect.colliderect(platform5) or rozumnik.rect.colliderect(platform6) or rozumnik.rect.colliderect(platform7) or rozumnik.rect.colliderect(platform8) or rozumnik.rect.colliderect(platform9):
                 colide = True
             else:
                 colide = False
         if game_level == 2:
             main_window.blit(menu_bg, (50,50))
+            for e in pygame.event.get():
+                if e.type == pygame.QUIT:
+                    game = False
     clock.tick(60)
     pygame.display.update()
 pygame.quit()
