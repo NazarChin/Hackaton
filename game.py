@@ -37,7 +37,7 @@ class Player(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
 
     def fire(self):
-        bullet = Bullet('images/bullet.png', self.rect.centerx, self.rect.top, 64, 64, 20)
+        bullet = Bullet('images/bullets.png', self.rect.centerx, self.rect.top, 64, 64, 20)
         bullets.add(bullet)
     def reset(self):
         main_window.blit(self.image, (self.rect.x, self.rect.y))
@@ -112,6 +112,42 @@ class Bullet(GameSprite):
                 if self.rect.x < -10:
                     self.kill()
         self.update_animation()
+class Enemy_h(GameSprite):
+    side = "left"
+    def __init__(self, player_image, player_x, player_y, size_x, size_y, player_speed, x1, x2):
+        GameSprite.__init__(self, player_image, player_x, player_y, size_x, size_y)
+        self.speed = player_speed
+        self.x1 = x1
+        self.x2 = x2
+
+    def update(self):
+        if self.rect.x <= self.x1: 
+            self.side = "right"
+        if self.rect.x >= self.x2:
+            self.side = "left"
+        if self.side == "left":
+            self.rect.x -= self.speed
+        else:
+            self.rect.x += self.speed
+
+class Enemy_v(GameSprite):
+    side = "up"
+    def __init__(self, player_image, player_x, player_y, size_x, size_y, player_speed, y1, y2):
+        GameSprite.__init__(self, player_image, player_x, player_y, size_x, size_y)
+        self.speed = player_speed
+        self.y1 =y1
+        self.y2 =y2
+
+    def update(self):
+        if self.rect.y <= self.y1: 
+            self.side = "down"
+        if self.rect.y >= self.y2:
+            self.side = "up"
+        if self.side == "up":
+            self.rect.y -= self.speed
+        else:
+            self.rect.y += self.speed
+
 back = (224, 224, 224)
 menu_rect_color = (255, 25, 255)
 
@@ -164,7 +200,7 @@ font = pygame.font.SysFont("Arial", 30)
 start_text = font.render("Грати", True, (0, 0, 0))
 quit_text = font.render("Вийти", True, (0, 0, 0))
 logo1 = pygame.transform.scale(pygame.image.load("images/logo1.png"), (500,500))
-logo2 = pygame.transform.scale(pygame.image.load("images/logo2.png"), (500,500))
+# logo2 = pygame.transform.scale(pygame.image.load("images/logo2.png"), (500,500))
 
 ############################ game controls ############################
 game_controls_shown = False
@@ -174,6 +210,11 @@ close = pygame.transform.scale(pygame.image.load("images/icons/close.png"), (64,
 close_hover = pygame.transform.scale(pygame.image.load("images/icons/close_hover.png"), (64,64))
 
 ############################ lvl 1 ############################
+monsters = pygame.sprite.Group()
+monster1 = Enemy_h('images/icons/gameico.png', 0, 300, 64, 64, 5, 0, 150)
+monster2 = Enemy_h('images/icons/gameico.png', 150, 110, 64, 64, 5, 120, 290)
+monsters.add(monster1)
+monsters.add(monster2)
 coin1 = GameSprite('images/icons/hint.png', 220, 126, 64, 64)
 coin2 = GameSprite('images/icons/hint.png', 60, 300, 64, 64)
 coin3 = GameSprite('images/icons/hint.png', 585, 310, 64, 64)
@@ -181,7 +222,7 @@ coin4 = GameSprite('images/icons/hint.png', 840, 100, 64, 64)
 coin5 = GameSprite('images/icons/hint.png', 1000, 410, 64, 64)
 coins = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
-coins.add(coin1)
+coins.add(coin1)   
 coins.add(coin2)
 coins.add(coin3)
 coins.add(coin4)
@@ -191,13 +232,12 @@ colide = True
 fall = False
 key_rect = False
 key = pygame.transform.scale(pygame.image.load("images/icons/key.png"), (64, 64))
-platform = pygame.transform.scale(pygame.image.load("images/platforms_lvl1.png"),(1280,720))
+platform = pygame.transform.scale(pygame.image.load("images/platforms_lvl1.png"),(window_width,window_height))
 rozumnik = Rozumnik("images/gnomi/rozumnik.png", x, y, 64, 64, 5, 5, "images/gnomi/rozumnik_ghost.png")
 rozumnik.load_animation()
 bg = pygame.transform.scale(pygame.image.load("images/bg.png"), (window_width, window_height))
 
-i = 0
-
+lost_screen = False
 game = True
 menurunning = True
 game_end = False
@@ -210,19 +250,19 @@ while game:
         quit_rect = pygame.draw.rect(main_window, menu_rect_color, (window_width/2-188/2, rect_y+rect_y_offset, 188, 91), 5)
         main_window.blit(menu_bg, (0,0))
         main_window.blit(logo1, (window_width/2-500/2, -150))
-        main_window.blit(start, (window_width/2-188/2, rect_y)) #play text
+        main_window.blit(start, (window_width/2-188/2, rect_y))
         if start_rect.collidepoint(pygame.mouse.get_pos()):
-            main_window.blit(start_hover, (window_width/2-188/2, rect_y)) #play text
-        main_window.blit(quit, (window_width/2-188/2, rect_y+rect_y_offset)) #quit text
+            main_window.blit(start_hover, (window_width/2-188/2, rect_y))
+        main_window.blit(quit, (window_width/2-188/2, rect_y+rect_y_offset))
         if quit_rect.collidepoint(pygame.mouse.get_pos()):
             main_window.blit(quit_hover, (window_width/2-188/2, rect_y+rect_y_offset))
         sound_rect = pygame.draw.rect(main_window, menu_bg_color, (window_width-64, window_height - 64, 64, 64), 1)
         if music_state:
-            sound_on = main_window.blit(sound_on_img, (window_width-64, window_height - 64)) #sound on icon
+            sound_on = main_window.blit(sound_on_img, (window_width-64, window_height - 64))
             if sound_rect.collidepoint(pygame.mouse.get_pos()):
                 sound_on = main_window.blit(sound_on_hover, (window_width-64, window_height - 64))
         elif music_state == False:
-            sound_off = main_window.blit(sound_off_img, (window_width-64, window_height - 64)) #sound off icon
+            sound_off = main_window.blit(sound_off_img, (window_width-64, window_height - 64))
             if sound_rect.collidepoint(pygame.mouse.get_pos()):
                 sound_off = main_window.blit(sound_off_hover, (window_width-64, window_height - 64))
         for e in pygame.event.get():
@@ -234,10 +274,17 @@ while game:
                     pygame.quit()
                     exit()
                 elif start_rect.collidepoint(pygame.mouse.get_pos()):
+                    main_window.fill(back)
+                    pygame.display.update()
                     fade(main_window, window_width, window_height)
-                    game_controls = True
+                    game_controls = False
                     menurunning = False
-                    pygame.mixer.music.stop()
+                    game_level = 1
+                    main_window.blit(bg, (0,0))
+                    pygame.mixer.music.load("sounds/lvl1.wav")
+                    if music_state:
+                        pygame.mixer.music.set_volume(0.5)
+                        pygame.mixer.music.play(-1)
                 elif sound_rect.collidepoint(pygame.mouse.get_pos()):
                     if music_state:
                         music_state = False
@@ -245,43 +292,8 @@ while game:
                     else:                            
                         music_state = True
                         pygame.mixer.music.unpause()
-
-    elif menurunning == False:
-        if game_controls:
-            i += 1
-            close_game_controls = pygame.draw.rect(main_window, back, (window_width-64, 0, 64, 64), 5)
-            main_window.blit(menu_bg,(0,0))
-            main_window.blit(controls, (0,0))
-            if close_game_controls.collidepoint(pygame.mouse.get_pos()):
-                main_window.blit(close_hover, (window_width-64, 0))
-            else:
-                main_window.blit(close, (window_width-64, 0))
-            for e in pygame.event.get():
-                if e.type == pygame.QUIT:
-                    game = False
-                if e.type == pygame.MOUSEBUTTONDOWN:
-                    if close_game_controls.collidepoint(pygame.mouse.get_pos()):
-                        fade(main_window, window_width, window_height)
-                        game_controls = False
-                        menurunning = False
-                        game_level = 1
-                        main_window.blit(bg, (0,0))
-                        pygame.mixer.music.load("sounds/lvl1.wav")
-                        if music_state:
-                            pygame.mixer.music.set_volume(0.5)
-                            pygame.mixer.music.play(-1)
-            if i/60 == 5:
-                fade(main_window, window_width, window_height)
-                game_controls = False
-                menurunning = False
-                game_level = 1
-                main_window.blit(bg, (0,0))
-                pygame.mixer.music.load("sounds/lvl1.wav")
-                if music_state:
-                    pygame.mixer.music.set_volume(0.5)
-                    pygame.mixer.music.play(-1)
-                i = 0
-        elif game_level == 1:
+    if menurunning == False:
+        if game_level == 1:
             key_rect = pygame.Rect(1170, -10, 64, 64)
             if coin_counter == 5:
                 pygame.draw.rect(main_window, (0,0,0), key_rect, 1)
@@ -302,6 +314,33 @@ while game:
             coins.draw(main_window)
             bullets.draw(main_window)
             bullets.update()
+            monsters.update()
+            monsters.draw(main_window)
+            if monster1 in monsters:
+                monster1.reset()
+            else:
+                monster1.rect.x -= 10000
+            if monster2 in monsters:
+                monster2.reset()
+            else:
+                monster2.rect.x -= 10000
+            for bullet in bullets:
+                for monster in monsters:
+                    if bullet.rect.colliderect(monster.rect):
+                        bullet.kill()
+                        monster.kill()
+            if monster2.rect.colliderect(rozumnik.rect) or monster1.rect.colliderect(rozumnik.rect):
+                fade(main_window, window_width, window_height)
+                coin_counter = 0
+                rozumnik.rect.x, rozumnik.rect.y = x, y
+                bullets.empty()
+                for coin in coins:
+                    coin.add(coins)
+                menurunning = True
+                pygame.mixer.music.stop()
+                if music_state:
+                    pygame.mixer.music.load("sounds/bg_music.wav")
+                    pygame.mixer.music.play(-1)
             if coin1.alive() and coin1.rect.colliderect(rozumnik.rect):
                 coin1.kill()
                 coin_counter += 1
@@ -323,7 +362,6 @@ while game:
                     fade(main_window,window_width, window_height)
                     game_level = 2
                     pygame.mixer.music.stop()
-                
             for e in pygame.event.get():
                 if e.type == pygame.QUIT:
                     game = False
