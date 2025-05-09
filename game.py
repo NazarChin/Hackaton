@@ -20,7 +20,7 @@ class GameSprite(pygame.sprite.Sprite):
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, player_image, player_x, player_y, size_x, size_y, player_x_speed,player_y_speed, bullet_image):
+    def __init__(self, player_image, player_x, player_y, size_x, size_y, player_x_speed,player_y_speed):
         self.player_image = player_image
         self.image = pygame.transform.scale(pygame.image.load(self.player_image), (size_x, size_y))
         self.rect = self.image.get_rect()
@@ -28,8 +28,6 @@ class Player(pygame.sprite.Sprite):
         self.rect.y = player_y
         self.x_speed = player_x_speed
         self.y_speed = player_y_speed
-        self.bullet = bullet_image
-        self.bullet_image = bullet_image
         self.direction = "right"
         self.animation_frames = []
         self.frame_index = 0
@@ -64,9 +62,6 @@ class Player(pygame.sprite.Sprite):
         self.image = self.animation_frames[int(self.frame_index)]
     
 
-class Rozumnik(Player):
-    def __init__(self, player_image, player_x, player_y, size_x, size_y, player_x_speed,player_y_speed, bullet_image):
-        super().__init__(player_image, player_x, player_y, size_x, size_y, player_x_speed, player_y_speed, bullet_image)
 
 class Bullet(GameSprite):
     def __init__(self, player_image, player_x, player_y, size_x, size_y, player_speed):
@@ -200,16 +195,7 @@ font = pygame.font.SysFont("Arial", 30)
 start_text = font.render("Грати", True, (0, 0, 0))
 quit_text = font.render("Вийти", True, (0, 0, 0))
 logo1 = pygame.transform.scale(pygame.image.load("images/logo1.png"), (500,500))
-# logo2 = pygame.transform.scale(pygame.image.load("images/logo2.png"), (500,500))
 
-############################ game controls ############################
-game_controls_shown = False
-game_controls = False
-controls = pygame.transform.scale(pygame.image.load("images/controls.png"), (window_width, window_height))
-close = pygame.transform.scale(pygame.image.load("images/icons/close.png"), (64,64))
-close_hover = pygame.transform.scale(pygame.image.load("images/icons/close_hover.png"), (64,64))
-
-############################ lvl 1 ############################
 monsters = pygame.sprite.Group()
 monster1 = Enemy_h('images/icons/gameico.png', 0, 300, 64, 64, 5, 0, 150)
 monster2 = Enemy_h('images/icons/gameico.png', 150, 110, 64, 64, 5, 120, 290)
@@ -231,19 +217,34 @@ coin_counter = 0
 colide = True              
 fall = False
 key_rect = False
+down = False
 key = pygame.transform.scale(pygame.image.load("images/icons/key.png"), (64, 64))
 platform = pygame.transform.scale(pygame.image.load("images/platforms_lvl1.png"),(window_width,window_height))
-rozumnik = Rozumnik("images/gnomi/rozumnik.png", x, y, 64, 64, 5, 5, "images/gnomi/rozumnik_ghost.png")
+rozumnik = Player("images/gnomi/rozumnik.png", x, y, 64, 64, 5, 5)
 rozumnik.load_animation()
 bg = pygame.transform.scale(pygame.image.load("images/bg.png"), (window_width, window_height))
+
+sonko = Player("images/gnomi/sonko.png", 21, 156, 64, 64, 5, 5)
+sonko.load_animation()
+lvl2_bg = pygame.transform.scale(pygame.image.load("images/lvl2_bg.png"), (window_width, window_height))
+xspeedsonko = 0
+yspeedsonko =0
+door = pygame.transform.scale(pygame.image.load('images/door.png'),(128,128))
 
 lost_screen = False
 game = True
 menurunning = True
 game_end = False
-game_level = 0
+game_level = 1
 jumpreload = 0
 
+
+# menurunning = False
+# game_level = 2
+# up_collide = (252, 186, 3) #yellow
+# down_collide = (38, 255, 0) #green
+# right_collide = (17, 0, 255)
+# left_collide = (255, 13, 0)
 while game:
     if menurunning:
         start_rect = pygame.draw.rect(main_window, menu_rect_color, (window_width/2-188/2, rect_y, 188, 91), 5)
@@ -279,12 +280,14 @@ while game:
                     fade(main_window, window_width, window_height)
                     game_controls = False
                     menurunning = False
-                    game_level = 1
                     main_window.blit(bg, (0,0))
-                    pygame.mixer.music.load("sounds/lvl1.wav")
-                    if music_state:
-                        pygame.mixer.music.set_volume(0.5)
-                        pygame.mixer.music.play(-1)
+                    if game_level == 1:
+                        pygame.mixer.music.load("sounds/lvl1.wav")
+                    elif game_level == 2:
+                        pygame.mixer.music.load("sounds/lvl2.wav")
+                    pygame.mixer.music.set_volume(0.5)
+                    pygame.mixer.music.play(-1)
+
                 elif sound_rect.collidepoint(pygame.mouse.get_pos()):
                     if music_state:
                         music_state = False
@@ -331,7 +334,6 @@ while game:
                         monster.kill()
             if monster2.rect.colliderect(rozumnik.rect) or monster1.rect.colliderect(rozumnik.rect):
                 fade(main_window, window_width, window_height)
-                coin_counter = 0
                 rozumnik.rect.x, rozumnik.rect.y = x, y
                 bullets.empty()
                 for coin in coins:
@@ -362,6 +364,13 @@ while game:
                     fade(main_window,window_width, window_height)
                     game_level = 2
                     pygame.mixer.music.stop()
+                    coin_counter = 0
+                    menurunning = True
+                    main_window.fill(back)
+                    if music_state:
+                        pygame.mixer.music.load("sounds/bg_music.wav")
+                        pygame.mixer.music.set_volume(0.5)
+                        pygame.mixer.music.play(-1)
             for e in pygame.event.get():
                 if e.type == pygame.QUIT:
                     game = False
@@ -370,11 +379,12 @@ while game:
                         if jumpreload == 1:
                             yspeed -= rozumnik.y_speed
                             jumpreload = 0
-                    if e.key == pygame.K_a:  
+                    if e.key == pygame.K_a: 
                         rozumnik.direction = "left"
                         xspeed -= rozumnik.x_speed
                     if e.key == pygame.K_s:
-                        yspeed += rozumnik.y_speed
+                        if down:
+                            yspeed += rozumnik.y_speed
                     if e.key == pygame.K_d:
                         rozumnik.direction = "right"
                         xspeed += rozumnik.x_speed
@@ -391,23 +401,87 @@ while game:
                             fall = True
                     if e.key == pygame.K_a or e.key == pygame.K_d:
                         xspeed = 0
-            if colide:
-                jumpreload = 1
-                fall = False
-            else:
-                if fall == True:
-                    rozumnik.rect.y += rozumnik.y_speed
-            rozumnik.rect.x += xspeed
-            rozumnik.rect.y += yspeed
+                        if colide:
+                            fall = False
+                        else:
+                            fall = True
             if rozumnik.rect.colliderect(block_rect) or rozumnik.rect.colliderect(platform1) or rozumnik.rect.colliderect(platform2) or rozumnik.rect.colliderect(platform3) or rozumnik.rect.colliderect(platform4) or rozumnik.rect.colliderect(platform5) or rozumnik.rect.colliderect(platform6) or rozumnik.rect.colliderect(platform7) or rozumnik.rect.colliderect(platform8) or rozumnik.rect.colliderect(platform9):
                 colide = True
             else:
                 colide = False
+            if colide:
+                jumpreload = 1
+                fall = False
+                down = False
+            else:
+                if fall == True:
+                    rozumnik.rect.y += rozumnik.y_speed
+                down = True
+            rozumnik.rect.x += xspeed
+            rozumnik.rect.y += yspeed
+            if rozumnik.rect.y < -32:
+                rozumnik.rect.y += 5
+            elif rozumnik.rect.y-64 > window_height:
+                rozumnik.rect.y -= 5
+            if rozumnik.rect.x < 0:
+                rozumnik.rect.x += 5
+            elif rozumnik.rect.x > window_width:
+                rozumnik.rect.x -= 5
         if game_level == 2:
-            main_window.blit(menu_bg, (50,50))
+            wallh1 = pygame.draw.rect(main_window, back, (0, 120, 510, 15), 15)
+            wallh2 = pygame.draw.rect(main_window, back, (0, 250, 420, 15), 15)
+            wallh3 = pygame.draw.rect(main_window, back, (120, 450, 300, 15), 15)
+            wallh4 = pygame.draw.rect(main_window, back, (200, 630, 300, 15), 15)
+            wallh5 = pygame.draw.rect(main_window, back, (500, 270, 345, 15), 15)
+            wallh6 = pygame.draw.rect(main_window, back, (500, 400, 180, 15), 15)
+            wallh7 = pygame.draw.rect(main_window, back, (780, 400, 160, 15), 15)
+            wallh8 = pygame.draw.rect(main_window, back, (830, 120, 500, 15), 15)
+            wallh9 = pygame.draw.rect(main_window, back, (940, 240, 640, 15), 15)
+            wallh10 = pygame.draw.rect(main_window, back, (780, 580, 290, 15), 15)
+            wallh11 = pygame.draw.rect(main_window, back, (1060, 440, 640, 15), 15)
+            wallv1 = pygame.draw.rect(main_window, back, (405, 250, 15, 200), 15)
+            wallv2 = pygame.draw.rect(main_window, back, (120, 450, 15, 550), 15)
+            wallv3 = pygame.draw.rect(main_window, back, (500, 120, 15, 160), 15)
+            wallv4 = pygame.draw.rect(main_window, back, (500, 400, 15, 240), 15)
+            wallv5 = pygame.draw.rect(main_window, back, (200, 630, 15, 500), 15)
+            wallv6 = pygame.draw.rect(main_window, back, (680, 400, 15, 600), 15)
+            wallv7 = pygame.draw.rect(main_window, back, (780, 400, 15, 190), 15)
+            wallv8 = pygame.draw.rect(main_window, back, (830, 120, 15, 165), 15)
+            wallv9 = pygame.draw.rect(main_window, back, (940, 240, 15, 170), 15)
+            wallv10 = pygame.draw.rect(main_window, back, (1050, 440, 15, 160), 15)
+            main_window.blit(lvl2_bg, (0,0))
+            main_window.blit(door, (1100,130))
+            sonko.update_animation()
+            sonko.reset()
+            if sonko.rect.colliderect(wallh1) or sonko.rect.colliderect(wallh3) or sonko.rect.colliderect(wallh5) or sonko.rect.colliderect(wallh8) or sonko.rect.colliderect(wallh11) or sonko.rect.colliderect(wallh10):
+                sonko.rect.y += 5
+            if sonko.rect.colliderect(wallh2) or sonko.rect.colliderect(wallh4) or sonko.rect.colliderect(wallh6) or sonko.rect.colliderect(wallh7) or sonko.rect.colliderect(wallh9) or sonko.rect.y > window_height-64:
+                sonko.rect.y -= 5
+            if sonko.rect.colliderect(wallv1) or sonko.rect.colliderect(wallv2) or sonko.rect.colliderect(wallv6) or sonko.rect.colliderect(wallv8) or sonko.rect.colliderect(wallv10) or sonko.rect.x < 0:
+                sonko.rect.x += 5
+            if sonko.rect.colliderect(wallv3) or sonko.rect.colliderect(wallv4) or sonko.rect.colliderect(wallv5) or sonko.rect.colliderect(wallv7) or sonko.rect.colliderect(wallv9) or sonko.rect.x > window_width-64:
+                sonko.rect.x -= 5
             for e in pygame.event.get():
                 if e.type == pygame.QUIT:
                     game = False
+                if e.type == pygame.KEYDOWN:
+                    if e.key == pygame.K_w:
+                        yspeedsonko -= sonko.y_speed
+                    if e.key == pygame.K_s:
+                        yspeedsonko += sonko.y_speed
+                    if e.key == pygame.K_a:
+                        sonko.direction = 'left'
+                        xspeedsonko -= sonko.x_speed
+                    if e.key == pygame.K_d:
+                        sonko.direction = "right"
+                        xspeedsonko += sonko.x_speed
+                if e.type == pygame.KEYUP:
+                    if e.key == pygame.K_w or e.key == pygame.K_s:
+                        yspeedsonko = 0
+                    if e.key == pygame.K_a or e.key == pygame.K_d:
+                        xspeedsonko = 0
+            sonko.rect.x += xspeedsonko
+            sonko.rect.y += yspeedsonko
     clock.tick(60)
     pygame.display.update()
 pygame.quit()
