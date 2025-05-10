@@ -1,1 +1,2 @@
-require pygame 2.6.1
+# Яблуко Долі: Порятунок Білосніжки 
+*Require pygame 2.6.1* 
