@@ -142,6 +142,14 @@ class Enemy_v(GameSprite):
             self.rect.y -= self.speed
         else:
             self.rect.y += self.speed
+def fade(screen, width, height):
+    fade_surface = pygame.Surface((width, height))
+    fade_surface.fill((0, 0, 0))
+    for alpha in range(0, 255, 10):
+        fade_surface.set_alpha(alpha)
+        screen.blit(fade_surface, (0, 0))
+        pygame.display.update()
+        pygame.time.delay(30)
 
 back = (224, 224, 224)
 menu_rect_color = (255, 25, 255)
@@ -158,14 +166,6 @@ clock = pygame.time.Clock()
 clock.tick(60)
 music_state = True
         
-def fade(screen, width, height):
-    fade_surface = pygame.Surface((width, height))
-    fade_surface.fill((0, 0, 0))
-    for alpha in range(0, 255, 10):
-        fade_surface.set_alpha(alpha)
-        screen.blit(fade_surface, (0, 0))
-        pygame.display.update()
-        pygame.time.delay(30)
 
 rect_y = 300
 rect_x = 580
@@ -224,12 +224,27 @@ rozumnik = Player("images/gnomi/rozumnik.png", x, y, 64, 64, 5, 5)
 rozumnik.load_animation()
 bg = pygame.transform.scale(pygame.image.load("images/bg.png"), (window_width, window_height))
 
+
+
+monsters2 = pygame.sprite.Group()
+sonkostartx = 21
+sonkostarty = 156
 sonko = Player("images/gnomi/sonko.png", 21, 156, 64, 64, 5, 5)
 sonko.load_animation()
 lvl2_bg = pygame.transform.scale(pygame.image.load("images/lvl2_bg.png"), (window_width, window_height))
 xspeedsonko = 0
 yspeedsonko =0
 door = pygame.transform.scale(pygame.image.load('images/door.png'),(128,128))
+ability_used = False
+ability_timer = False
+ability_time = 0
+shield = pygame.transform.scale(pygame.image.load('images/icons/shield.png'), (32,32))
+clock_icon = pygame.transform.scale(pygame.image.load('images/icons/clock.png'), (32,32))
+ability_reload = False
+invincibility = False
+monsters_added = False
+
+
 
 lost_screen = False
 game = True
@@ -239,12 +254,8 @@ game_level = 1
 jumpreload = 0
 
 
-# menurunning = False
-# game_level = 2
-# up_collide = (252, 186, 3) #yellow
-# down_collide = (38, 255, 0) #green
-# right_collide = (17, 0, 255)
-# left_collide = (255, 13, 0)
+game_level = 2
+menurunning = False
 while game:
     if menurunning:
         start_rect = pygame.draw.rect(main_window, menu_rect_color, (window_width/2-188/2, rect_y, 188, 91), 5)
@@ -428,6 +439,12 @@ while game:
             elif rozumnik.rect.x > window_width:
                 rozumnik.rect.x -= 5
         if game_level == 2:
+            if not monsters_added:
+                monster1 = Enemy_h('images/icons/gameico.png', 0, 300, 64, 64, 5, 0, 150)
+                monster2 = Enemy_v('images/icons/gameico.png', 430, 230, 64, 64, 5, 230, 400)
+                monsters2.add(monster1)
+                monsters2.add(monster2)
+                monsters_added = True
             wallh1 = pygame.draw.rect(main_window, back, (0, 120, 510, 15), 15)
             wallh2 = pygame.draw.rect(main_window, back, (0, 250, 420, 15), 15)
             wallh3 = pygame.draw.rect(main_window, back, (120, 450, 300, 15), 15)
@@ -450,9 +467,14 @@ while game:
             wallv9 = pygame.draw.rect(main_window, back, (940, 240, 15, 170), 15)
             wallv10 = pygame.draw.rect(main_window, back, (1050, 440, 15, 160), 15)
             main_window.blit(lvl2_bg, (0,0))
-            main_window.blit(door, (1100,130))
+            if coin_counter == 0:
+                main_window.blit(door, (1100,130))
             sonko.update_animation()
             sonko.reset()
+            monster2.reset()
+            monster2.update()
+            monster1.reset()
+            monster1.update()
             if sonko.rect.colliderect(wallh1) or sonko.rect.colliderect(wallh3) or sonko.rect.colliderect(wallh5) or sonko.rect.colliderect(wallh8) or sonko.rect.colliderect(wallh11) or sonko.rect.colliderect(wallh10):
                 sonko.rect.y += 5
             if sonko.rect.colliderect(wallh2) or sonko.rect.colliderect(wallh4) or sonko.rect.colliderect(wallh6) or sonko.rect.colliderect(wallh7) or sonko.rect.colliderect(wallh9) or sonko.rect.y > window_height-64:
@@ -475,6 +497,8 @@ while game:
                     if e.key == pygame.K_d:
                         sonko.direction = "right"
                         xspeedsonko += sonko.x_speed
+                    if e.key == pygame.K_SPACE:
+                        ability_used = True
                 if e.type == pygame.KEYUP:
                     if e.key == pygame.K_w or e.key == pygame.K_s:
                         yspeedsonko = 0
@@ -482,6 +506,38 @@ while game:
                         xspeedsonko = 0
             sonko.rect.x += xspeedsonko
             sonko.rect.y += yspeedsonko
+            if ability_used and not ability_reload :
+                ability_used = False
+                ability_timer = True
+            if ability_timer:
+                if sonko.direction == 'right':
+                    main_window.blit(shield, (sonko.rect.x+32,sonko.rect.y+32))
+                elif sonko.direction == 'left':
+                    main_window.blit(shield, (sonko.rect.x,sonko.rect.y+32))
+                ability_time += 1
+                if ability_time/60 < 1.5:
+                    invincibility = True
+                else:
+                    invincibility = False
+                    ability_timer = False
+                    ability_time = 0
+                    ability_reload = True
+            if ability_reload:
+                main_window.blit(clock_icon, (sonko.rect.x+16,sonko.rect.y-32))
+                ability_time += 1
+                if ability_time/60 < 2:
+                    pass
+                else:
+                    invincibility = False
+                    ability_timer = False
+                    ability_time = 0
+                    ability_reload = False
+            if not invincibility:
+                if sonko.rect.colliderect(monster1.rect) or sonko.rect.colliderect(monster2.rect):
+                    fade(main_window, window_width, window_height)
+                    sonko.rect.x = sonkostartx
+                    sonko.rect.y = sonkostarty
+
     clock.tick(60)
     pygame.display.update()
 pygame.quit()
