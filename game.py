@@ -106,6 +106,17 @@ class Bullet(GameSprite):
                 self.rect.x -= self.speed
                 if self.rect.x < -10:
                     self.kill()
+        elif game_level == 3:
+            if burkotun.direction == "right":
+                self.direction = "right"
+                self.rect.x += self.speed
+                if self.rect.x > window_width+10:
+                    self.kill()
+            elif burkotun.direction == "left":
+                self.direction = "left"
+                self.rect.x -= self.speed
+                if self.rect.x < -10:
+                    self.kill()
         self.update_animation()
 class Enemy_h(GameSprite):
     side = "left"
@@ -245,17 +256,24 @@ invincibility = False
 monsters_added = False
 
 
+bigmonster = Enemy_h('images/icons/gameico.png', 0, 300, 256, 256, 5, 0, window_width-256)
+burkotun = Player("images/gnomi/burkotun.png", 21, 621, 64, 64, 5, 5)
+xspeedburkotun = 0
+yspeedburkotun = 0
+lvl3 = pygame.transform.scale(pygame.image.load("images/lvl3_bg.png"), (window_width, window_height))
+monsterhp = 100
+way = "up"
 
-lost_screen = False
+
 game = True
 menurunning = True
 game_end = False
 game_level = 1
 jumpreload = 0
 
-# invincibility = True
-# game_level = 2
-# menurunning = False
+
+game_level = 4
+menurunning = False
 while game:
     if menurunning:
         start_rect = pygame.draw.rect(main_window, menu_rect_color, (window_width/2-188/2, rect_y, 188, 91), 5)
@@ -298,20 +316,27 @@ while game:
                     game_controls = False
                     menurunning = False
                     main_window.blit(bg, (0,0))
-                    if game_level == 1:
-                        pygame.mixer.music.load("sounds/lvl1.wav")
-                    elif game_level == 2:
-                        pygame.mixer.music.load("sounds/lvl2.wav")
-                    pygame.mixer.music.set_volume(0.5)
-                    pygame.mixer.music.play(-1)
+                    if music_state:
+                        if game_level == 1:
+                            pygame.mixer.music.load("sounds/lvl1.wav")
+                        elif game_level == 2:
+                            pygame.mixer.music.load("sounds/lvl2.wav")
+                        elif game_level == 3:
+                            pygame.mixer.music.load("sounds/lvl3.wav")
+                        elif game_level == 4:
+                            pygame.mixer.music.load("sounds/lvl4.wav")
+                        pygame.mixer.music.set_volume(0.5)
+                        pygame.mixer.music.play(-1)
 
                 elif sound_rect.collidepoint(pygame.mouse.get_pos()):
                     if music_state:
                         music_state = False
                         pygame.mixer.music.pause()
+                        sound.set_volume(0)
                     else:                            
                         music_state = True
                         pygame.mixer.music.unpause()
+                        sound.set_volume(1)
     if menurunning == False:
         if game_level == 1:
             key_rect = pygame.Rect(1170, -10, 64, 64)
@@ -476,6 +501,7 @@ while game:
             if coin_counter == 3:
                 main_window.blit(door, (1100,130))
                 if sonko.rect.colliderect(door_rect):
+                    fall = True
                     fade(main_window,window_width, window_height)
                     game_level = 3
                     pygame.mixer.music.stop()
@@ -569,6 +595,133 @@ while game:
                     sonko.rect.x = sonkostartx
                     sonko.rect.y = sonkostarty
         if game_level == 3:
+            block_rect = pygame.draw.rect(main_window, (0,0,0), (0, 685, 1280, 400), 1) 
+            if monsterhp/10 <= 0:
+                door_rect = pygame.draw.rect(main_window, (0,0,0), (1000+16, 685-96, 128-32,128), 1) 
+            main_window.blit(lvl3, (0,0))
+            painting = pygame.draw.rect(main_window, (0,0,0), (880, 175, 150, 180), 5)
+            burkotun.reset()
+            burkotun.update_animation()  
+            bigmonster.reset()
+            bigmonster.update()
+            bullets.update()
+            bullets.draw(main_window)
+            for e in pygame.event.get():
+                if e.type == pygame.QUIT:
+                    game = False
+                if e.type == pygame.KEYDOWN:
+                    if e.key == pygame.K_w:
+                        if jumpreload == 1:
+                            yspeedburkotun -= burkotun.y_speed
+                            jumpreload = 0
+                    if e.key == pygame.K_a: 
+                        burkotun.direction = "left"
+                        xspeedburkotun -= burkotun.x_speed
+                    if e.key == pygame.K_s:
+                        if down:
+                            yspeedburkotun += burkotun.y_speed
+                    if e.key == pygame.K_d:
+                        burkotun.direction = "right"
+                        xspeedburkotun += burkotun.x_speed
+                    if e.key == pygame.K_SPACE:
+                        burkotun.fire()
+                if e.type == pygame.KEYUP:
+                    if e.key == pygame.K_w or e.key == pygame.K_s:
+                        yspeedburkotun = 0
+                        jumpreload = 0
+                        fall = True
+                        if burkotun.rect.colliderect(block_rect):
+                            fall = False
+                        else:
+                            fall = True
+                    if e.key == pygame.K_a or e.key == pygame.K_d:
+                        xspeedburkotun = 0
+                        if burkotun.rect.colliderect(block_rect):
+                            fall = False
+                        else:
+                            fall = True
+            if burkotun.rect.colliderect(block_rect) or burkotun.rect.colliderect(painting):
+                colide = True
+            else:
+                colide = False
+            if colide:
+                jumpreload = 1
+                fall = False
+                down = False
+            else:
+                if fall == True:
+                    burkotun.rect.y += burkotun.y_speed
+                down = True
+            burkotun.rect.x += xspeedburkotun
+            burkotun.rect.y += yspeedburkotun
+            if burkotun.rect.y < -32:
+                burkotun.rect.y += 5
+            elif burkotun.rect.y > window_height-64:
+                burkotun.rect.y -= 5
+            if burkotun.rect.x < 0:
+                burkotun.rect.x += 5
+            elif burkotun.rect.x > window_width:
+                burkotun.rect.x -= 5
+
+            if monsterhp/10 <= 0:
+                bigmonster.rect.y += 5
+                main_window.blit(door, (1000, 685-96))
+                if burkotun.rect.colliderect(door_rect):
+                    fade(main_window, window_width, window_height)
+                    menurunning = True
+                    game_level = 4
+                    pygame.mixer.music.stop()
+                    if music_state:
+                        pygame.mixer.music.load("sounds/bg_music.wav")
+            if 0.1 <= monsterhp / 10 < 2:
+                main_window.blit(pygame.transform.scale(pygame.image.load('images/levels/health1.png'), (256, 64)), (0,0))
+            if 2 <= monsterhp / 10 < 3:
+                main_window.blit(pygame.transform.scale(pygame.image.load('images/levels/health2.png'), (256, 64)), (0,0))
+            if 3 <= monsterhp / 10 < 4:
+                main_window.blit(pygame.transform.scale(pygame.image.load('images/levels/health3.png'), (256, 64)), (0,0))
+            if 4 <= monsterhp / 10 < 5:
+                main_window.blit(pygame.transform.scale(pygame.image.load('images/levels/health4.png'), (256, 64)), (0,0))
+            if 5 <= monsterhp / 10 < 6:
+                main_window.blit(pygame.transform.scale(pygame.image.load('images/levels/health5.png'), (256, 64)), (0,0))
+            if 6 <= monsterhp / 10 < 7:
+                main_window.blit(pygame.transform.scale(pygame.image.load('images/levels/health6.png'), (256, 64)), (0,0))
+            if 7 <= monsterhp / 10 < 8:
+                main_window.blit(pygame.transform.scale(pygame.image.load('images/levels/health7.png'), (256, 64)), (0,0))
+            if 8 <= monsterhp / 10 < 9:
+                main_window.blit(pygame.transform.scale(pygame.image.load('images/levels/health8.png'), (256, 64)), (0,0))
+            if 9 <= monsterhp / 10 < 10:
+                main_window.blit(pygame.transform.scale(pygame.image.load('images/levels/health9.png'), (256, 64)), (0,0))
+            if 10 <= monsterhp / 10:
+                main_window.blit(pygame.transform.scale(pygame.image.load('images/levels/health11.png'), (256, 64)), (0,0))
+                print()
+            if monsterhp > 0:
+                for bullet in bullets:
+                    if bullet.rect.colliderect(bigmonster.rect):
+                        bullet.kill()
+                        monsterhp -= 1
+                if burkotun.rect.colliderect(bigmonster.rect):
+                    sound.play()
+                    fade(main_window, window_width, window_height)
+                    monsterhp = 100
+                    burkotun.rect.x = 21
+                    burkotun.rect.y = 621
+                if bigmonster.rect.y == 0:
+                    way = "down"
+                elif bigmonster.rect.y >= window_height-256-128:
+                    way = "up"
+                if way == "down":
+                    bigmonster.rect.y += 1
+                elif way == "up":
+                    bigmonster.rect.y -= 1
+        if game_level == 4:
+            main_window.blit(pygame.transform.scale(pygame.image.load('images/end_bg.png'), (window_width, window_height)), (0,0))
+            main_window.blit(door, (620, 550))
+            sonko.update_animation()
+            rozumnik.update_animation()
+            burkotun.update_animation()
+            sonko.reset()
+            rozumnik.reset()
+            burkotun.reset()
             for e in pygame.event.get():
                 if e.type == pygame.QUIT:
                     game = False
