@@ -164,7 +164,6 @@ def fade(screen, width, height):
 
 back = (224, 224, 224)
 menu_rect_color = (255, 25, 255)
-
 window_width = 1280
 window_height = 720
 pygame.display.set_icon(pygame.image.load("images/icons/gameico.png"))
@@ -176,12 +175,10 @@ clock = pygame.time.Clock()
 clock.tick(60)
 music_state = True
         
-
 rect_y = 300
 rect_x = 580
 rect_y_offset = 100
 
-############################ menu ############################ 
 pygame.mixer.music.load("sounds/bg_music.wav")
 pygame.mixer.music.set_volume(0.5)
 pygame.mixer.music.play(-1)
@@ -236,8 +233,6 @@ rozumnik = Player("images/gnomi/rozumnik.png", 96, 616, 64, 64, 5, 5)
 rozumnik.load_animation()
 bg = pygame.transform.scale(pygame.image.load("images/bg.png"), (window_width, window_height))
 
-
-
 sonkostartx = 21
 sonkostarty = 156
 sonko = Player("images/gnomi/sonko.png", 21, 156, 64, 64, 5, 5)
@@ -253,8 +248,7 @@ shield = pygame.transform.scale(pygame.image.load('images/icons/shield.png'), (3
 clock_icon = pygame.transform.scale(pygame.image.load('images/icons/clock.png'), (32,32))
 ability_reload = False
 invincibility = False
-monsters_added = False
-
+readded = False
 
 bigmonster = Enemy_h('images/icons/gameico.png', 0, 300, 256, 256, 5, 0, window_width-256)
 burkotun = Player("images/gnomi/burkotun.png", 21, 621, 64, 64, 5, 5)
@@ -263,32 +257,38 @@ yspeedburkotun = 0
 lvl3 = pygame.transform.scale(pygame.image.load("images/lvl3_bg.png"), (window_width, window_height))
 monsterhp = 100
 way = "up"
-
+lvl4_1 = True
+lvl4_2 = False
+lvl4_3 = False
+bilosnizhkax = 300
+bilosnizhkay = 250
 
 game = True
 menurunning = True
 game_end = False
 game_level = 1
 jumpreload = 0
-
-
-game_level = 4
-menurunning = False
+game_timer = 0
+game_ended = False
+font = pygame.font.SysFont("Arial", 50)
+i = 0
 while game:
     if menurunning:
-        start_rect = pygame.draw.rect(main_window, menu_rect_color, (window_width/2-188/2, rect_y, 188, 91), 5)
+        if not game_ended:
+            start_rect = pygame.draw.rect(main_window, menu_rect_color, (window_width/2-188/2, rect_y, 188, 91), 5)
         quit_rect = pygame.draw.rect(main_window, menu_rect_color, (window_width/2-188/2, rect_y+rect_y_offset, 188, 91), 5)
         main_window.blit(menu_bg, (0,0))
         main_window.blit(logo1, (window_width/2-500/2, -150))
-        if game_level == 1:
-            main_window.blit(start, (window_width/2-188/2, rect_y))
-        elif game_level >= 2:
-            main_window.blit(next_png, (window_width/2-188/2, rect_y))
-        if start_rect.collidepoint(pygame.mouse.get_pos()):
+        if not game_ended:
             if game_level == 1:
-                main_window.blit(start_hover, (window_width/2-188/2, rect_y))
+                main_window.blit(start, (window_width/2-188/2, rect_y))
             elif game_level >= 2:
-                main_window.blit(next_hover, (window_width/2-188/2, rect_y))
+                main_window.blit(next_png, (window_width/2-188/2, rect_y))
+            if start_rect.collidepoint(pygame.mouse.get_pos()):
+                if game_level == 1:
+                    main_window.blit(start_hover, (window_width/2-188/2, rect_y))
+                elif game_level >= 2:
+                    main_window.blit(next_hover, (window_width/2-188/2, rect_y))
         main_window.blit(quit, (window_width/2-188/2, rect_y+rect_y_offset))
         if quit_rect.collidepoint(pygame.mouse.get_pos()):
             main_window.blit(quit_hover, (window_width/2-188/2, rect_y+rect_y_offset))
@@ -301,6 +301,9 @@ while game:
             sound_off = main_window.blit(sound_off_img, (window_width-64, window_height - 64))
             if sound_rect.collidepoint(pygame.mouse.get_pos()):
                 sound_off = main_window.blit(sound_off_hover, (window_width-64, window_height - 64))
+        if game_ended:
+            text = font.render(f"Хвилин: {int(game_timer // 3600)}. Секунд: {int((game_timer // 60) % 60)}", True, (0, 0, 0))
+            main_window.blit(text, (window_width // 2 - text.get_width() // 2, window_height- 64 - text.get_height() // 2))
         for e in pygame.event.get():
             if e.type == pygame.QUIT:
                 game = False
@@ -327,7 +330,6 @@ while game:
                             pygame.mixer.music.load("sounds/lvl4.wav")
                         pygame.mixer.music.set_volume(0.5)
                         pygame.mixer.music.play(-1)
-
                 elif sound_rect.collidepoint(pygame.mouse.get_pos()):
                     if music_state:
                         music_state = False
@@ -487,7 +489,7 @@ while game:
             wallv8 = pygame.draw.rect(main_window, back, (830, 120, 15, 165), 15)
             wallv9 = pygame.draw.rect(main_window, back, (940, 240, 15, 170), 15)
             wallv10 = pygame.draw.rect(main_window, back, (1050, 440, 15, 160), 15)
-            if not monsters_added:
+            if not readded:
                 coins2 = pygame.sprite.Group()
                 coin1 = GameSprite('images/icons/potion.png', 300, 550, 64, 64)
                 coin2 = GameSprite('images/icons/potion.png', 1100, 550, 64, 64)
@@ -496,7 +498,7 @@ while game:
                 monster1 = Enemy_h('images/icons/gameico.png', 1000, 630, 64, 64, 5, 800, 1000)
                 monster2 = Enemy_v('images/icons/gameico.png', 430, 230, 64, 64, 5, 230, 400)
                 monster3 = Enemy_v('images/icons/gameico.png', 860, 100, 64, 64, 5, 100, 300)
-                monsters_added = True
+                readded = True
             main_window.blit(lvl2_bg, (0,0))
             if coin_counter == 3:
                 main_window.blit(door, (1100,130))
@@ -667,6 +669,8 @@ while game:
                 bigmonster.rect.y += 5
                 main_window.blit(door, (1000, 685-96))
                 if burkotun.rect.colliderect(door_rect):
+                    lvl4_1 = True
+                    readded = False
                     fade(main_window, window_width, window_height)
                     menurunning = True
                     game_level = 4
@@ -693,7 +697,6 @@ while game:
                 main_window.blit(pygame.transform.scale(pygame.image.load('images/levels/health9.png'), (256, 64)), (0,0))
             if 10 <= monsterhp / 10:
                 main_window.blit(pygame.transform.scale(pygame.image.load('images/levels/health11.png'), (256, 64)), (0,0))
-                print()
             if monsterhp > 0:
                 for bullet in bullets:
                     if bullet.rect.colliderect(bigmonster.rect):
@@ -714,17 +717,94 @@ while game:
                 elif way == "up":
                     bigmonster.rect.y -= 1
         if game_level == 4:
-            main_window.blit(pygame.transform.scale(pygame.image.load('images/end_bg.png'), (window_width, window_height)), (0,0))
-            main_window.blit(door, (620, 550))
-            sonko.update_animation()
-            rozumnik.update_animation()
-            burkotun.update_animation()
-            sonko.reset()
-            rozumnik.reset()
-            burkotun.reset()
+            if lvl4_1:
+                door_rect = pygame.draw.rect(main_window, (0,0,0), (670, 550, 128, 128), 1)
+                if not readded:
+                    sonko.rect.x = 10
+                    sonko.rect.y = 620
+                    rozumnik.rect.x = 60
+                    rozumnik.rect.y = 620
+                    burkotun.rect.x = 110
+                    burkotun.rect.y= 620
+                    readded = True
+                main_window.blit(pygame.transform.scale(pygame.image.load('images/end_bg.png'), (window_width, window_height)), (0,0))
+                main_window.blit(door, (620, 550))
+                if not sonko.rect.colliderect(door_rect):
+                    sonko.update_animation()
+                    sonko.reset()
+                if not rozumnik.rect.colliderect(door_rect):
+                    rozumnik.update_animation()
+                    rozumnik.reset()
+                if not burkotun.rect.colliderect(door_rect):
+                    burkotun.update_animation()
+                    burkotun.reset()
+                if sonko.rect.x < 636:
+                    sonko.rect.x += 5
+                if rozumnik.rect.x < 636:
+                    rozumnik.rect.x += 5
+                if burkotun.rect.x < 636:
+                    burkotun.rect.x += 5
+                if burkotun.rect.colliderect(door_rect) and rozumnik.rect.colliderect(door_rect) and sonko.rect.colliderect(door_rect):
+                    fade(main_window, window_width, window_height)
+                    lvl4_2 = True
+                    lvl4_1 = False
+                    readded = False
+            if lvl4_2:
+                if not readded:
+                    sonko.rect.x = 10
+                    sonko.rect.y = window_height-64
+                    rozumnik.rect.x = 60
+                    rozumnik.rect.y = window_height - 64
+                    burkotun.rect.x = 110
+                    burkotun.rect.y= window_height - 64
+                    readded = True
+                main_window.blit((pygame.transform.scale(pygame.image.load("images/end2.png"),(window_width,window_height))), (0,0))
+                main_window.blit((pygame.transform.scale(pygame.image.load("images/bilosnizhka.png"),(512,512))), (bilosnizhkax,bilosnizhkay))
+                bilosnizhkax += 5
+                if sonko.rect.x < window_width:
+                    sonko.update_animation()
+                    sonko.reset()
+                    sonko.rect.x += 7
+                if rozumnik.rect.x < window_width:
+                    rozumnik.update_animation()
+                    rozumnik.reset()
+                    rozumnik.rect.x += 7
+                if burkotun.rect.x < window_width:
+                    burkotun.update_animation()
+                    burkotun.reset()
+                    burkotun.rect.x += 7
+                if burkotun.rect.x > window_width and rozumnik.rect.x > window_width and sonko.rect.x > window_width:
+                    fade(main_window,window_width, window_height)
+                    lvl4_3 = True
+                    lvl4_2 = False
+                    lvl4_1 = False
+                    readded = False
+            if lvl4_3:
+                main_window.blit(bg, (0,0))
+                main_window.blit((pygame.transform.scale(pygame.image.load("images/bilosnizhka.png"),(512,512))), (360,170))
+                burkotun.update_animation()
+                burkotun.reset()
+                rozumnik.update_animation()
+                rozumnik.reset()
+                sonko.update_animation()
+                sonko.reset()
+                rozumnik.direction = "left"
+                burkotun.direction = "left"
+                burkotun.rect.x = 750
+                burkotun.rect.y = 260
+                sonko.rect.x = 510
+                sonko.rect.y = 265
+                rozumnik.rect.x = 620
+                rozumnik.rect.y = 120
+                i += 1
+                if i/60 == 5:
+                    fade(main_window, window_width, window_height)
+                    menurunning = True
+                    game_ended = True
             for e in pygame.event.get():
                 if e.type == pygame.QUIT:
                     game = False
+        game_timer += 1
     clock.tick(60)
     pygame.display.update()
 pygame.quit()
