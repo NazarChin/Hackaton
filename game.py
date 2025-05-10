@@ -154,7 +154,6 @@ def fade(screen, width, height):
 back = (224, 224, 224)
 menu_rect_color = (255, 25, 255)
 
-recty_offset = 100
 window_width = 1280
 window_height = 720
 pygame.display.set_icon(pygame.image.load("images/icons/gameico.png"))
@@ -171,11 +170,6 @@ rect_y = 300
 rect_x = 580
 rect_y_offset = 100
 
-x = 96
-y = 616
-
-xspeed = 0
-yspeed = 0
 ############################ menu ############################ 
 pygame.mixer.music.load("sounds/bg_music.wav")
 pygame.mixer.music.set_volume(0.5)
@@ -195,7 +189,14 @@ font = pygame.font.SysFont("Arial", 30)
 start_text = font.render("Грати", True, (0, 0, 0))
 quit_text = font.render("Вийти", True, (0, 0, 0))
 logo1 = pygame.transform.scale(pygame.image.load("images/logo1.png"), (500,500))
+next_png = pygame.transform.scale(pygame.image.load("images/icons/next.png"), (188,91))
+next_hover = pygame.transform.scale(pygame.image.load("images/icons/next_hover.png"), (188,91))
 
+x = 96
+y = 616
+xspeed = 0
+yspeed = 0
+sound = pygame.mixer.Sound('sounds/ouch.wav')
 monsters = pygame.sprite.Group()
 monster1 = Enemy_h('images/icons/gameico.png', 0, 300, 64, 64, 5, 0, 150)
 monster2 = Enemy_h('images/icons/gameico.png', 150, 110, 64, 64, 5, 120, 290)
@@ -220,13 +221,12 @@ key_rect = False
 down = False
 key = pygame.transform.scale(pygame.image.load("images/icons/key.png"), (64, 64))
 platform = pygame.transform.scale(pygame.image.load("images/platforms_lvl1.png"),(window_width,window_height))
-rozumnik = Player("images/gnomi/rozumnik.png", x, y, 64, 64, 5, 5)
+rozumnik = Player("images/gnomi/rozumnik.png", 96, 616, 64, 64, 5, 5)
 rozumnik.load_animation()
 bg = pygame.transform.scale(pygame.image.load("images/bg.png"), (window_width, window_height))
 
 
 
-monsters2 = pygame.sprite.Group()
 sonkostartx = 21
 sonkostarty = 156
 sonko = Player("images/gnomi/sonko.png", 21, 156, 64, 64, 5, 5)
@@ -253,18 +253,24 @@ game_end = False
 game_level = 1
 jumpreload = 0
 
-
-game_level = 2
-menurunning = False
+# invincibility = True
+# game_level = 2
+# menurunning = False
 while game:
     if menurunning:
         start_rect = pygame.draw.rect(main_window, menu_rect_color, (window_width/2-188/2, rect_y, 188, 91), 5)
         quit_rect = pygame.draw.rect(main_window, menu_rect_color, (window_width/2-188/2, rect_y+rect_y_offset, 188, 91), 5)
         main_window.blit(menu_bg, (0,0))
         main_window.blit(logo1, (window_width/2-500/2, -150))
-        main_window.blit(start, (window_width/2-188/2, rect_y))
+        if game_level == 1:
+            main_window.blit(start, (window_width/2-188/2, rect_y))
+        elif game_level >= 2:
+            main_window.blit(next_png, (window_width/2-188/2, rect_y))
         if start_rect.collidepoint(pygame.mouse.get_pos()):
-            main_window.blit(start_hover, (window_width/2-188/2, rect_y))
+            if game_level == 1:
+                main_window.blit(start_hover, (window_width/2-188/2, rect_y))
+            elif game_level >= 2:
+                main_window.blit(next_hover, (window_width/2-188/2, rect_y))
         main_window.blit(quit, (window_width/2-188/2, rect_y+rect_y_offset))
         if quit_rect.collidepoint(pygame.mouse.get_pos()):
             main_window.blit(quit_hover, (window_width/2-188/2, rect_y+rect_y_offset))
@@ -344,16 +350,10 @@ while game:
                         bullet.kill()
                         monster.kill()
             if monster2.rect.colliderect(rozumnik.rect) or monster1.rect.colliderect(rozumnik.rect):
+                if music_state:
+                    sound.play()
                 fade(main_window, window_width, window_height)
                 rozumnik.rect.x, rozumnik.rect.y = x, y
-                bullets.empty()
-                for coin in coins:
-                    coin.add(coins)
-                menurunning = True
-                pygame.mixer.music.stop()
-                if music_state:
-                    pygame.mixer.music.load("sounds/bg_music.wav")
-                    pygame.mixer.music.play(-1)
             if coin1.alive() and coin1.rect.colliderect(rozumnik.rect):
                 coin1.kill()
                 coin_counter += 1
@@ -439,12 +439,8 @@ while game:
             elif rozumnik.rect.x > window_width:
                 rozumnik.rect.x -= 5
         if game_level == 2:
-            if not monsters_added:
-                monster1 = Enemy_h('images/icons/gameico.png', 0, 300, 64, 64, 5, 0, 150)
-                monster2 = Enemy_v('images/icons/gameico.png', 430, 230, 64, 64, 5, 230, 400)
-                monsters2.add(monster1)
-                monsters2.add(monster2)
-                monsters_added = True
+            if coin_counter == 3:
+                door_rect = pygame.draw.rect(main_window, back, (1100, 130, 128, 128), 15)
             wallh1 = pygame.draw.rect(main_window, back, (0, 120, 510, 15), 15)
             wallh2 = pygame.draw.rect(main_window, back, (0, 250, 420, 15), 15)
             wallh3 = pygame.draw.rect(main_window, back, (120, 450, 300, 15), 15)
@@ -466,15 +462,48 @@ while game:
             wallv8 = pygame.draw.rect(main_window, back, (830, 120, 15, 165), 15)
             wallv9 = pygame.draw.rect(main_window, back, (940, 240, 15, 170), 15)
             wallv10 = pygame.draw.rect(main_window, back, (1050, 440, 15, 160), 15)
+            if not monsters_added:
+                coins2 = pygame.sprite.Group()
+                coin1 = GameSprite('images/icons/potion.png', 300, 550, 64, 64)
+                coin2 = GameSprite('images/icons/potion.png', 1100, 550, 64, 64)
+                coin3 = GameSprite('images/icons/potion.png', 940, 170, 64, 64)
+                coins2.add(coin1, coin2, coin3)
+                monster1 = Enemy_h('images/icons/gameico.png', 1000, 630, 64, 64, 5, 800, 1000)
+                monster2 = Enemy_v('images/icons/gameico.png', 430, 230, 64, 64, 5, 230, 400)
+                monster3 = Enemy_v('images/icons/gameico.png', 860, 100, 64, 64, 5, 100, 300)
+                monsters_added = True
             main_window.blit(lvl2_bg, (0,0))
-            if coin_counter == 0:
+            if coin_counter == 3:
                 main_window.blit(door, (1100,130))
+                if sonko.rect.colliderect(door_rect):
+                    fade(main_window,window_width, window_height)
+                    game_level = 3
+                    pygame.mixer.music.stop()
+                    coin_counter = 0
+                    menurunning = True
+                    main_window.fill(back)
+                    if music_state:
+                        pygame.mixer.music.load("sounds/bg_music.wav")
+                        pygame.mixer.music.set_volume(0.5)
+                        pygame.mixer.music.play(-1)
+            if coin1.alive() and coin1.rect.colliderect(sonko.rect):
+                coin1.kill()
+                coin_counter += 1
+            elif coin2.alive() and coin2.rect.colliderect(sonko.rect):
+                coin2.kill()
+                coin_counter += 1
+            elif coin3.alive() and coin3.rect.colliderect(sonko.rect):
+                coin3.kill()
+                coin_counter += 1
             sonko.update_animation()
             sonko.reset()
+            monster3.reset()
+            monster3.update()
             monster2.reset()
             monster2.update()
             monster1.reset()
             monster1.update()
+            coins2.draw(main_window)
             if sonko.rect.colliderect(wallh1) or sonko.rect.colliderect(wallh3) or sonko.rect.colliderect(wallh5) or sonko.rect.colliderect(wallh8) or sonko.rect.colliderect(wallh11) or sonko.rect.colliderect(wallh10):
                 sonko.rect.y += 5
             if sonko.rect.colliderect(wallh2) or sonko.rect.colliderect(wallh4) or sonko.rect.colliderect(wallh6) or sonko.rect.colliderect(wallh7) or sonko.rect.colliderect(wallh9) or sonko.rect.y > window_height-64:
@@ -533,11 +562,16 @@ while game:
                     ability_time = 0
                     ability_reload = False
             if not invincibility:
-                if sonko.rect.colliderect(monster1.rect) or sonko.rect.colliderect(monster2.rect):
+                if sonko.rect.colliderect(monster1.rect) or sonko.rect.colliderect(monster2.rect) or sonko.rect.colliderect(monster3.rect):
+                    if music_state:
+                        sound.play()
                     fade(main_window, window_width, window_height)
                     sonko.rect.x = sonkostartx
                     sonko.rect.y = sonkostarty
-
+        if game_level == 3:
+            for e in pygame.event.get():
+                if e.type == pygame.QUIT:
+                    game = False
     clock.tick(60)
     pygame.display.update()
 pygame.quit()
