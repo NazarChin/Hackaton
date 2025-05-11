@@ -660,6 +660,7 @@ while game:
                     pygame.mixer.music.stop()
                     if music_state:
                         pygame.mixer.music.load("sounds/bg_music.wav")
+                        pygame.mixer.music.play(-1)
             if 0.1 <= monsterhp / 10 < 2:
                 main_window.blit(pygame.transform.scale(pygame.image.load('images/levels/health1.png'), (256, 64)), (0,0))
             if 2 <= monsterhp / 10 < 3:
@@ -784,6 +785,9 @@ while game:
                     fade(main_window, window_width, window_height)
                     menurunning = True
                     game_ended = True
+                    if music_state:
+                        pygame.mixer.music.load("sounds/bg_music.wav")
+                        pygame.mixer.music.play(-1)
             for e in pygame.event.get():
                 if e.type == pygame.QUIT:
                     game = False
