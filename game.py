@@ -1,8 +1,5 @@
 import pygame
-
 pygame.init()
-mixer = pygame.mixer.init()
-
 class GameSprite(pygame.sprite.Sprite):
     def __init__(self, player_image, player_x, player_y, size_x, size_y):
         pygame.sprite.Sprite.__init__(self)
@@ -17,8 +14,6 @@ class GameSprite(pygame.sprite.Sprite):
 
     def reset(self):
         main_window.blit(self.image, (self.rect.x, self.rect.y))
-
-
 class Player(pygame.sprite.Sprite):
     def __init__(self, player_image, player_x, player_y, size_x, size_y, player_x_speed,player_y_speed):
         self.player_image = player_image
@@ -33,13 +28,11 @@ class Player(pygame.sprite.Sprite):
         self.frame_index = 0
         self.load_animation()
         pygame.sprite.Sprite.__init__(self)
-
     def fire(self):
         bullet = Bullet('images/bullets.png', self.rect.centerx, self.rect.top, 64, 64, 20)
         bullets.add(bullet)
     def reset(self):
         main_window.blit(self.image, (self.rect.x, self.rect.y))
-
     def load_animation(self):
         sheet_right = pygame.image.load(self.player_image).convert_alpha()
         frame_width = 24
@@ -50,7 +43,6 @@ class Player(pygame.sprite.Sprite):
         ]
         self.frames_left = [pygame.transform.flip(f, True, False) for f in self.frames_right]
         self.animation_frames = self.frames_right
-    
     def update_animation(self):
         if self.direction == "right":
             self.animation_frames = self.frames_right
@@ -60,9 +52,6 @@ class Player(pygame.sprite.Sprite):
         if self.frame_index >= len(self.animation_frames):
             self.frame_index = 0
         self.image = self.animation_frames[int(self.frame_index)]
-    
-
-
 class Bullet(GameSprite):
     def __init__(self, player_image, player_x, player_y, size_x, size_y, player_speed):
         GameSprite.__init__(self, player_image, player_x, player_y, size_x, size_y)
@@ -72,7 +61,6 @@ class Bullet(GameSprite):
         self.animation_frames = []
         self.frame_index = 0
         self.load_animation()
-
     def load_animation(self):
         sheet_right = pygame.image.load("images/bullets.png").convert_alpha()
         frame_width = 64
@@ -83,7 +71,6 @@ class Bullet(GameSprite):
         ]
         self.frames_left = [pygame.transform.flip(f, True, False) for f in self.frames_right]
         self.animation_frames = self.frames_right
-    
     def update_animation(self):
         if self.direction == "right":
             self.animation_frames = self.frames_right
@@ -93,7 +80,6 @@ class Bullet(GameSprite):
         if self.frame_index >= len(self.animation_frames):
             self.frame_index = 0
         self.image = self.animation_frames[int(self.frame_index)]
-
     def update(self):
         if game_level == 1:
             if rozumnik.direction == "right":
@@ -125,7 +111,6 @@ class Enemy_h(GameSprite):
         self.speed = player_speed
         self.x1 = x1
         self.x2 = x2
-
     def update(self):
         if self.rect.x <= self.x1: 
             self.side = "right"
@@ -135,7 +120,6 @@ class Enemy_h(GameSprite):
             self.rect.x -= self.speed
         else:
             self.rect.x += self.speed
-
 class Enemy_v(GameSprite):
     side = "up"
     def __init__(self, player_image, player_x, player_y, size_x, size_y, player_speed, y1, y2):
@@ -143,7 +127,6 @@ class Enemy_v(GameSprite):
         self.speed = player_speed
         self.y1 =y1
         self.y2 =y2
-
     def update(self):
         if self.rect.y <= self.y1: 
             self.side = "down"
@@ -178,11 +161,9 @@ music_state = True
 rect_y = 300
 rect_x = 580
 rect_y_offset = 100
-
 pygame.mixer.music.load("sounds/bg_music.wav")
 pygame.mixer.music.set_volume(0.5)
 pygame.mixer.music.play(-1)
-
 menu_bg = pygame.transform.scale(pygame.image.load("images/menubg.png"), (window_width, window_height))
 menu_bg_color = (79,173, 245)
 sound_on_img = pygame.transform.scale(pygame.image.load("images/icons/soundon.png"), (64, 64))
@@ -262,6 +243,7 @@ lvl4_2 = False
 lvl4_3 = False
 bilosnizhkax = 300
 bilosnizhkay = 250
+death = pygame.mixer.Sound('sounds/death.wav')
 
 game = True
 menurunning = True
@@ -666,6 +648,7 @@ while game:
                 burkotun.rect.x -= 5
 
             if monsterhp/10 <= 0:
+                death.play()
                 bigmonster.rect.y += 5
                 main_window.blit(door, (1000, 685-96))
                 if burkotun.rect.colliderect(door_rect):
